@@ -31,7 +31,7 @@ threshold = st.sidebar.slider(
     "Confidence Threshold",
     min_value=0.50,
     max_value=0.90,
-    value=0.80,
+    value=0.70,
     step=0.05
 )
 
@@ -101,9 +101,7 @@ if uploaded_file is not None:
     gray = cv2.cvtColor(image_np, cv2.COLOR_BGR2GRAY)
     resized = cv2.resize(gray, (h, w))
 
-    # Normalize input (IMPORTANT)
-    face_vector = resized.flatten().astype("float32") / 255.0
-    face_vector = face_vector.reshape(1, -1)
+    face_vector = resized.flatten().reshape(1, -1)
 
     # PCA → LDA
     face_pca = pca.transform(face_vector)
@@ -118,10 +116,15 @@ if uploaded_file is not None:
 
     class_id = np.argmax(prob)
 
-    # Stronger Unknown Logic
-    if max_prob < threshold or confidence_gap < 0.20 or max_prob > 0.98:
+    # Unknown Detection Logic
+    if max_prob < threshold:
         label = "UNKNOWN"
         st.error("⚠ Person Not Recognized")
+
+    elif confidence_gap < 0.10:
+        label = "UNKNOWN"
+        st.error("⚠ Person Not Recognized")
+
     else:
         label = class_names[class_id]
         st.success("✅ Person Recognized")
@@ -137,6 +140,3 @@ if uploaded_file is not None:
         st.write(f"**Name:** {label}")
         st.write(f"**Confidence:** {max_prob:.2f}")
         st.progress(float(max_prob))
-
-    st.markdown("---")
-    st.info("Model: PCA → LDA → MLP Neural Network")
